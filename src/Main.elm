@@ -60,8 +60,8 @@ allPeople =
     A.fromList [ "Adam", "Ron", "Natalie", "Jordan" ]
 
 
-init : Int -> ( Model, Cmd Msg )
-init flags =
+init : () -> ( Model, Cmd Msg )
+init _ =
     ( { chores =
             [ { name = "Vacuum stairs", freq = Weekly }
             , { name = "Vacuum landing", freq = Weekly }
@@ -236,7 +236,7 @@ personFor freq day i people =
 -- ---------------------------
 
 
-main : Program Int Model Msg
+main : Program () Model Msg
 main =
     Browser.document
         { init = init
