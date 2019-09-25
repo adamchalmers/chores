@@ -138,10 +138,6 @@ millisSinceEpoch =
 -- ---------------------------
 
 
-textTD s =
-    td [] [ text s ]
-
-
 toString chore =
     case chore of
         Weekly ->
@@ -189,6 +185,8 @@ describeDay model =
     String.fromInt <| 1 + modBy 28 model.day
 
 
+{-| Calculate what day of a (28 day) month it is, given how many ms since epoch.
+-}
 dayOfMonth millisecondsSinceEpoch =
     modBy 28 <| (millisecondsSinceEpoch // millisecondsInAWeek)
 
@@ -198,6 +196,9 @@ choreToRow day i chore =
     let
         person =
             personFor chore.freq day i allPeople
+
+        textTD s =
+            td [] [ text s ]
 
         row =
             tr []
