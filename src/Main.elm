@@ -209,10 +209,8 @@ choreToRow day i chore =
     ( row, person )
 
 
-
--- Given the day of the month (0-27) and a chore number, choose a person.
-
-
+{-| Given the day of the month (0-27) and a chore number, choose a person.
+-}
 personFor : Frequency -> Int -> Int -> Array String -> String
 personFor freq day i people =
     let
@@ -243,7 +241,7 @@ main =
         , update = update
         , view =
             \m ->
-                { title = "Elm 0.19 starter"
+                { title = "Housemate chore roster"
                 , body = [ view m ]
                 }
         , subscriptions = \_ -> Sub.none
