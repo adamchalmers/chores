@@ -1,4 +1,4 @@
-port module Main exposing (Model, Msg(..), init, main, personFor, toJs, update, view)
+port module Main exposing (Frequency(..), Model, Msg(..), init, main, personFor, toJs, update, view)
 
 import Array as A exposing (Array)
 import Browser
@@ -29,7 +29,7 @@ port toJs : String -> Cmd msg
 
 type alias Model =
     { chores : List Chore
-    , timestamp : Int
+    , day : Int
     }
 
 
@@ -44,8 +44,18 @@ type Frequency
     | Monthly
 
 
+daysPer : Frequency -> Int
+daysPer f =
+    case f of
+        Weekly ->
+            7
+
+        Monthly ->
+            28
+
+
 allPeople =
-    [ "Adam", "Ron", "Natalie", "Jordan" ]
+    A.fromList [ "Adam", "Ron", "Natalie", "Jordan" ]
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -65,9 +75,9 @@ init flags =
             , { name = "Dusting/baseboards", freq = Monthly }
             , { name = "Clutter check (put away if you know where it is, if you don’t know whose it is, just send a photo to the group)", freq = Monthly }
             ]
-      , timestamp = 0
+      , day = 0
       }
-    , Task.perform UpdateTime millisSinceEpoch
+    , Task.perform UpdateDay millisSinceEpoch
     )
 
 
@@ -79,7 +89,9 @@ init flags =
 
 type Msg
     = Noop
-    | UpdateTime Int
+    | Inc
+    | Dec
+    | UpdateDay Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -88,8 +100,14 @@ update message model =
         Noop ->
             ( model, Cmd.none )
 
-        UpdateTime t ->
-            ( { model | timestamp = t }, Cmd.none )
+        UpdateDay t ->
+            ( { model | day = t }, Cmd.none )
+
+        Inc ->
+            ( { model | day = model.day + 1 }, Cmd.none )
+
+        Dec ->
+            ( { model | day = model.day - 1 }, Cmd.none )
 
 
 millisecondsInAWeek =
@@ -104,7 +122,7 @@ millisecondsInAMonth =
 
 millisSinceEpoch : Task x Int
 millisSinceEpoch =
-    Task.map Time.posixToMillis Time.now
+    Task.map (dayOfMonth << Time.posixToMillis) Time.now
 
 
 
@@ -139,26 +157,27 @@ view model =
         , h2 [] [ text <| describeDay model ]
         , table [ class "pure-table pure-table-bordered" ]
             [ thead [] [ headerRow ]
-            , tbody [] (L.indexedMap choreToRow model.chores)
+            , tbody [] (L.indexedMap (choreToRow <| model.day) model.chores)
             ]
-        , p [] [ text ("Unix timestamp " ++ String.fromInt model.timestamp) ]
+        , button [ onClick Inc, class "pure-button" ] [ text "+" ]
+        , button [ onClick Dec, class "pure-button" ] [ text "-" ]
         ]
 
 
 describeDay model =
-    "Day " ++ String.fromInt (dayOfMonth model)
+    "Day " ++ String.fromInt (1 + modBy 28 model.day) ++ " of 28"
 
 
-dayOfMonth model =
-    modBy 28 <| (model.timestamp // millisecondsInAWeek)
+dayOfMonth millisecondsSinceEpoch =
+    modBy 28 <| (millisecondsSinceEpoch // millisecondsInAWeek)
 
 
-choreToRow : Int -> Chore -> Html Msg
-choreToRow i chore =
+choreToRow : Int -> Int -> Chore -> Html Msg
+choreToRow day i chore =
     tr []
         [ textTD chore.name
         , textTD (toString chore.freq)
-        , textTD "Adam"
+        , textTD <| personFor chore.freq day i allPeople
         ]
 
 
@@ -166,17 +185,14 @@ choreToRow i chore =
 -- Given the day of the month (0-27) and a chore number, choose a person.
 
 
-personFor : Int -> Int -> Array String -> String
-personFor i day people =
+personFor : Frequency -> Int -> Int -> Array String -> String
+personFor freq day i people =
     let
         x =
-            day // 7
-
-        n =
-            A.length people
+            day // daysPer freq
 
         index =
-            modBy n x
+            (x + i) |> modBy (A.length people)
     in
     case A.get index people of
         Just p ->

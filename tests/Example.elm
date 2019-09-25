@@ -16,27 +16,31 @@ unitTest =
     describe "simple unit test"
         [ test "personFor week 1" <|
             \() ->
-                personFor 0 0 people
+                personFor Weekly 0 0 people
                     |> Expect.equal "a"
+        , test "personFor week 1 chore 2" <|
+            \() ->
+                personFor Weekly 0 1 people
+                    |> Expect.equal "b"
         , test "personFor week 2" <|
             \() ->
-                personFor 0 7 people
+                personFor Weekly 7 0 people
                     |> Expect.equal "b"
         , test "personFor week 3" <|
             \() ->
-                personFor 0 14 people
+                personFor Weekly 14 0 people
                     |> Expect.equal "c"
         , test "personFor week 4" <|
             \() ->
-                personFor 0 21 people
+                personFor Weekly 21 0 people
                     |> Expect.equal "d"
         , test "personFor week 5" <|
             \() ->
-                personFor 0 28 people
+                personFor Weekly 28 0 people
                     |> Expect.equal "a"
         , test "personFor week 6" <|
             \() ->
-                personFor 0 35 people
+                personFor Weekly 35 0 people
                     |> Expect.equal "b"
         ]
 
