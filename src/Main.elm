@@ -4,10 +4,11 @@ import Array as A exposing (Array)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Http exposing (Error(..))
 import Json.Decode as Decode
 import List as L
+import String exposing (startsWith, toLower)
 import Task exposing (Task)
 import Time exposing (millisToPosix, toDay, utc)
 
@@ -30,6 +31,7 @@ port toJs : String -> Cmd msg
 type alias Model =
     { chores : List Chore
     , day : Int
+    , filter : String
     }
 
 
@@ -76,6 +78,7 @@ init flags =
             , { name = "Clutter check (put away if you know where it is, if you don’t know whose it is, just send a photo to the group)", freq = Monthly }
             ]
       , day = 0
+      , filter = ""
       }
     , Task.perform UpdateDay millisSinceEpoch
     )
@@ -92,6 +95,7 @@ type Msg
     | Inc
     | Dec
     | UpdateDay Int
+    | UpdateFilter String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -102,6 +106,9 @@ update message model =
 
         UpdateDay t ->
             ( { model | day = t }, Cmd.none )
+
+        UpdateFilter s ->
+            ( { model | filter = s }, Cmd.none )
 
         Inc ->
             ( { model | day = model.day + 1 }, Cmd.none )
@@ -151,34 +158,55 @@ view model =
             [ "Chore", "Frequency", "Who" ]
                 |> L.map (\s -> th [] [ text s ])
                 |> tr []
+
+        bodyRows =
+            model.chores
+                |> L.indexedMap (choreToRow <| model.day)
+                |> L.filter (\( _, person ) -> startsWith (toLower model.filter) (toLower person))
+                |> L.map (\( row, person ) -> row)
     in
     div [ class "container" ]
-        [ h1 [] [ text "Housemate chore roster" ]
-        , h2 [] [ text <| describeDay model ]
-        , table [ class "pure-table pure-table-bordered" ]
-            [ thead [] [ headerRow ]
-            , tbody [] (L.indexedMap (choreToRow <| model.day) model.chores)
+        [ h1 [ style "text-align" "center" ] [ text <| "Housemate chore roster" ]
+        , text "Filter by person: "
+        , input [ type_ "input", onInput UpdateFilter ] []
+        , hr [] []
+        , br [] []
+        , table [ class "pure-table pure-table-bordered", style "width" "100%" ]
+            [ col [ style "width" "60%" ] []
+            , col [ style "width" "20%" ] []
+            , col [ style "width" "20%" ] []
+            , thead [] [ headerRow ]
+            , tbody [] bodyRows
             ]
+        , br [] []
+        , text <| "Showing day " ++ describeDay model ++ " of 28. Change date: "
         , button [ onClick Inc, class "pure-button" ] [ text "+" ]
         , button [ onClick Dec, class "pure-button" ] [ text "-" ]
         ]
 
 
 describeDay model =
-    "Day " ++ String.fromInt (1 + modBy 28 model.day) ++ " of 28"
+    String.fromInt <| 1 + modBy 28 model.day
 
 
 dayOfMonth millisecondsSinceEpoch =
     modBy 28 <| (millisecondsSinceEpoch // millisecondsInAWeek)
 
 
-choreToRow : Int -> Int -> Chore -> Html Msg
+choreToRow : Int -> Int -> Chore -> ( Html Msg, String )
 choreToRow day i chore =
-    tr []
-        [ textTD chore.name
-        , textTD (toString chore.freq)
-        , textTD <| personFor chore.freq day i allPeople
-        ]
+    let
+        person =
+            personFor chore.freq day i allPeople
+
+        row =
+            tr []
+                [ textTD chore.name
+                , textTD (toString chore.freq)
+                , textTD person
+                ]
+    in
+    ( row, person )
 
 
 
