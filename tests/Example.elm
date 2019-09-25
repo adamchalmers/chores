@@ -1,5 +1,6 @@
-module Example exposing (fuzzTest, unitTest, viewTest)
+module Example exposing (unitTest)
 
+import Array as A
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Main exposing (..)
@@ -13,40 +14,32 @@ import Test.Html.Selector exposing (tag, text)
 unitTest : Test
 unitTest =
     describe "simple unit test"
-        [ test "Inc adds one" <|
+        [ test "personFor week 1" <|
             \() ->
-                update Inc (Model 0 "")
-                    |> Tuple.first
-                    |> .counter
-                    |> Expect.equal 1
-        ]
-
-
-{-| See <https://github.com/elm-community/elm-test>
--}
-fuzzTest : Test
-fuzzTest =
-    describe "simple fuzz test"
-        [ fuzz int "Inc ALWAYS adds one" <|
-            \ct ->
-                update Inc (Model ct "")
-                    |> Tuple.first
-                    |> .counter
-                    |> Expect.equal (ct + 1)
-        ]
-
-
-{-| see <https://github.com/eeue56/elm-html-test>
--}
-viewTest : Test
-viewTest =
-    describe "Testing view function"
-        [ test "Button has the expected text" <|
+                personFor 0 0 people
+                    |> Expect.equal "a"
+        , test "personFor week 2" <|
             \() ->
-                Model 0 ""
-                    |> view
-                    |> Query.fromHtml
-                    |> Query.findAll [ tag "button" ]
-                    |> Query.first
-                    |> Query.has [ text "+ 1" ]
+                personFor 0 7 people
+                    |> Expect.equal "b"
+        , test "personFor week 3" <|
+            \() ->
+                personFor 0 14 people
+                    |> Expect.equal "c"
+        , test "personFor week 4" <|
+            \() ->
+                personFor 0 21 people
+                    |> Expect.equal "d"
+        , test "personFor week 5" <|
+            \() ->
+                personFor 0 28 people
+                    |> Expect.equal "a"
+        , test "personFor week 6" <|
+            \() ->
+                personFor 0 35 people
+                    |> Expect.equal "b"
         ]
+
+
+people =
+    A.fromList [ "a", "b", "c", "d" ]

@@ -1,5 +1,6 @@
-port module Main exposing (Model, Msg(..), init, main, toJs, update, view)
+port module Main exposing (Model, Msg(..), init, main, personFor, toJs, update, view)
 
+import Array as A exposing (Array)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -7,6 +8,8 @@ import Html.Events exposing (onClick)
 import Http exposing (Error(..))
 import Json.Decode as Decode
 import List as L
+import Task exposing (Task)
+import Time exposing (millisToPosix, toDay, utc)
 
 
 
@@ -26,7 +29,7 @@ port toJs : String -> Cmd msg
 
 type alias Model =
     { chores : List Chore
-    , people : List String
+    , timestamp : Int
     }
 
 
@@ -39,6 +42,10 @@ type alias Chore =
 type Frequency
     = Weekly
     | Monthly
+
+
+allPeople =
+    [ "Adam", "Ron", "Natalie", "Jordan" ]
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -58,9 +65,9 @@ init flags =
             , { name = "Dusting/baseboards", freq = Monthly }
             , { name = "Clutter check (put away if you know where it is, if you don’t know whose it is, just send a photo to the group)", freq = Monthly }
             ]
-      , people = [ "Adam", "Ron", "Natalie", "Jordan" ]
+      , timestamp = 0
       }
-    , Cmd.none
+    , Task.perform UpdateTime millisSinceEpoch
     )
 
 
@@ -72,6 +79,7 @@ init flags =
 
 type Msg
     = Noop
+    | UpdateTime Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -79,6 +87,24 @@ update message model =
     case message of
         Noop ->
             ( model, Cmd.none )
+
+        UpdateTime t ->
+            ( { model | timestamp = t }, Cmd.none )
+
+
+millisecondsInAWeek =
+    1000 * 60 * 60 * 24 * 7
+
+
+{-| Assume a month is 4 weeks
+-}
+millisecondsInAMonth =
+    millisecondsInAWeek * 4
+
+
+millisSinceEpoch : Task x Int
+millisSinceEpoch =
+    Task.map Time.posixToMillis Time.now
 
 
 
@@ -109,23 +135,55 @@ view model =
                 |> tr []
     in
     div [ class "container" ]
-        [ header []
-            [ h1 [] [ text "Housemate chore roster" ]
-            ]
+        [ h1 [] [ text "Housemate chore roster" ]
+        , h2 [] [ text <| describeDay model ]
         , table [ class "pure-table pure-table-bordered" ]
             [ thead [] [ headerRow ]
-            , tbody [] (L.map choreToRow model.chores)
+            , tbody [] (L.indexedMap choreToRow model.chores)
             ]
+        , p [] [ text ("Unix timestamp " ++ String.fromInt model.timestamp) ]
         ]
 
 
-choreToRow : Chore -> Html Msg
-choreToRow chore =
+describeDay model =
+    "Day " ++ String.fromInt (dayOfMonth model)
+
+
+dayOfMonth model =
+    modBy 28 <| (model.timestamp // millisecondsInAWeek)
+
+
+choreToRow : Int -> Chore -> Html Msg
+choreToRow i chore =
     tr []
         [ textTD chore.name
         , textTD (toString chore.freq)
         , textTD "Adam"
         ]
+
+
+
+-- Given the day of the month (0-27) and a chore number, choose a person.
+
+
+personFor : Int -> Int -> Array String -> String
+personFor i day people =
+    let
+        x =
+            day // 7
+
+        n =
+            A.length people
+
+        index =
+            modBy n x
+    in
+    case A.get index people of
+        Just p ->
+            p
+
+        Nothing ->
+            "???"
 
 
 
