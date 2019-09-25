@@ -80,7 +80,7 @@ init _ =
       , day = 0
       , filter = ""
       }
-    , Task.perform UpdateDay millisSinceEpoch
+    , Task.perform UpdateDay whatDayOfMonthIsToday
     )
 
 
@@ -127,8 +127,8 @@ millisecondsInAMonth =
     millisecondsInAWeek * 4
 
 
-millisSinceEpoch : Task x Int
-millisSinceEpoch =
+whatDayOfMonthIsToday : Task x Int
+whatDayOfMonthIsToday =
     Task.map (dayOfMonth << Time.posixToMillis) Time.now
 
 
